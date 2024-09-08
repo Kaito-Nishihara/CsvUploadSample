@@ -1,0 +1,145 @@
+﻿@model FileUploadModel
+
+<h2>ファイルアップロード</h2>
+
+<form id="uploadForm" method="post" enctype="multipart/form-data">
+    <div class="form-group">
+        <label for="fileInput">ファイルを選択:</label>
+        <input type="file" id="fileInput" name="File" class="form-control" />
+    </div>
+    <button type="submit" class="btn btn-primary">アップロード</button>
+</form>
+
+<!-- 進行状況表示モーダル -->
+<div class="modal fade" id="progressModal" tabindex="-1" role="dialog" aria-labelledby="progressModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title blinking" id="progressModalLabel">ファイルアップロード中...</h5>
+      </div>
+      <div class="modal-body">
+        <div class="progress">
+          <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" id="cancelUploadBtn">キャンセル</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 完了メッセージ用モーダル -->
+<div class="modal fade" id="completeModal" tabindex="-1" role="dialog" aria-labelledby="completeModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="completeModalLabel">完了</h5>
+            </div>
+            <div class="modal-body">
+                アップロードが完了しました！
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">閉じる</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.11/signalr.min.js"></script>
+    <script>
+        let xhr;
+
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/progressHub")
+            .build();
+
+        connection.on("ReceiveProgress", function (progress) {
+            var progressBar = document.getElementById("progressBar");
+            progressBar.style.width = progress + "%";
+            progressBar.innerText = progress + "%";
+        });
+
+        connection.start().then(() => console.log("SignalR接続が確立されました。")).catch(function (err) {
+            return console.error(err.toString());
+        });
+        document.getElementById("uploadForm").onsubmit = function (e) {
+            e.preventDefault();
+
+            // まずサーバーからuploadIdを取得
+            fetch('/Home/GenerateUploadId', {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    xhr = new XMLHttpRequest();
+                    xhr.uploadId = data.uploadId; // 取得したuploadIdを設定                  
+
+                    $('#progressModal').modal('show');
+
+                    var formData = new FormData();
+                    var fileInput = document.getElementById("fileInput");
+
+                    formData.append("file", fileInput.files[0]);
+                    formData.append("uploadId", xhr.uploadId); // uploadIdをFormDataに追加
+
+                    xhr.open("POST", "/Home/FileUpload", true);
+
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState == XMLHttpRequest.DONE) {
+                            if (xhr.status === 499) {
+                                $('#progressModal').modal('hide');
+                                alert("アップロードがキャンセルされました。");
+                            } else if (xhr.status === 200) {
+                                $('#progressModal').modal('hide');
+                                $('#completeModal').modal('show');
+                            } else {
+                                $('#progressModal').modal('hide');
+                                alert("アップロードに失敗しました。");
+                            }
+                        }
+                    };
+
+                    xhr.onerror = function () {
+                        $('#progressModal').modal('hide');
+                        alert("サーバーへのリクエストが失敗しました。");
+                    };
+
+                    xhr.send(formData);
+                })
+                .catch(error => {
+                    console.error('Upload IDの取得中にエラーが発生しました:', error);
+                });
+        };
+
+
+
+        document.getElementById("cancelUploadBtn").onclick = function () {
+            if (xhr && xhr.uploadId) {
+                // サーバーにキャンセルリクエストを送信
+                fetch('/Home/CancelUpload', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ uploadId: xhr.uploadId })
+                }).then(response => {
+                    if (response.status === 200) {
+                        // キャンセルが成功した場合                                     
+                    } else {
+                        alert("キャンセルに失敗しました。");
+                    }
+                }).catch(error => {
+                    console.error('キャンセルリクエスト中にエラーが発生しました:', error);
+                });
+            }
+        };
+
+    </script>
+}
+
