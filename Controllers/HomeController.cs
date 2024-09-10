@@ -95,7 +95,7 @@ namespace CsvUploadSample.Controllers
             try
             {
                 _csvUploadService.CancelUpload(request.UploadId);
-                return Ok("キャンセルが成功しました。");
+                return await Task.FromResult(Ok("キャンセルが成功しました。"));
             }
             catch (ArgumentException ex)
             {
@@ -106,100 +106,6 @@ namespace CsvUploadSample.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "キャンセル処理中にエラーが発生しました。");
             }
         }
-
-
-
-        private async Task ImportCsvToTemporaryTable(StreamReader streamReader)
-        {
-            using var csv = new CsvReader(streamReader, CultureInfo.InvariantCulture);
-
-            var records = csv.GetRecords<TempCsvMaster>().ToList();
-
-            using (var transaction = await _context.Database.BeginTransactionAsync())
-            {
-                try
-                {
-                    foreach (var record in records)
-                    {
-                        // 一時テーブルにデータを追加
-                        _context.TempCsvMasters.Add(record);
-                    }
-
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    throw new Exception("データインポート中にエラーが発生しました。", ex);
-                }
-            }
-        }
-
-
-        private async Task ValidateAndProcessData()
-        {
-            var invalidRecords = new List<TempCsvMaster>();
-            var validRecords = new List<TempCsvMaster>();
-
-            var allRecords = await _context.TempCsvMasters.ToListAsync();
-
-            foreach (var record in allRecords)
-            {
-                if (IsValid(record))
-                {
-                    validRecords.Add(record);
-                }
-                else
-                {
-                    invalidRecords.Add(record);
-                }
-            }
-
-            if (invalidRecords.Any())
-            {
-                // エラーメッセージの生成
-                var errorMessage = GenerateErrorMessage(invalidRecords);
-                throw new Exception(errorMessage);
-            }
-
-            // 有効なデータを本番テーブルに移行
-            var productionRecords = validRecords.Select(record => new CsvMaster
-            {
-                Name = record.Name,
-                Description = record.Description,
-                Type = record.Type,
-                InternetId = record.InternetId,
-                CreateAt = record.CreateAt
-            }).ToList();
-
-            _context.CsvMasters.AddRange(productionRecords);
-            await _context.SaveChangesAsync();
-
-            // 一時テーブルのデータを削除
-            _context.TempCsvMasters.RemoveRange(allRecords);
-            await _context.SaveChangesAsync();
-        }
-
-        private bool IsValid(TempCsvMaster record)
-        {
-            // バリデーションロジックをここに実装
-            return !string.IsNullOrEmpty(record.Name) && record.InternetId > 0;
-        }
-
-        private string GenerateErrorMessage(List<TempCsvMaster> invalidRecords)
-        {
-            var sb = new StringBuilder();
-            sb.AppendLine("バリデーションエラーが発生しました:");
-
-            foreach (var record in invalidRecords)
-            {
-                sb.AppendLine($"Id: {record.Id}, Name: {record.Name}, エラーメッセージ: [ここにエラー内容]");
-            }
-
-            return sb.ToString();
-        }
-
 
         public IActionResult Privacy()
         {
