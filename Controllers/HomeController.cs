@@ -56,8 +56,9 @@ namespace CsvUploadSample.Controllers
         [HttpPost]
         public async Task<IActionResult> FileUpload(IFormFile file, [FromForm] string uploadId)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync(); // トランザクションの開始
             try
-            {
+            {               
                 if (file == null || file.Length == 0)
                 {
                     return BadRequest("ファイルが無効です。");
@@ -65,20 +66,25 @@ namespace CsvUploadSample.Controllers
 
                 // ファイル処理のロジック
                 await _csvUploadService.UploadAndProcessFile(file, _hubContext, HttpContext.RequestAborted, uploadId);
-                await _hubContext.Clients.All.SendAsync("ReceiveProgress", 50);
-                await _csvUploadService.MigrateData(uploadId, x => x.UploadId == uploadId);
+                await _hubContext.Clients.All.SendAsync("ReceiveProgress", 30);
+
+                await _csvUploadService.MigrateData(uploadId, x => x.UploadId == uploadId,_hubContext);
+                await transaction.CommitAsync();
                 await _hubContext.Clients.All.SendAsync("ReceiveProgress", 100);
+
                 return Ok("ファイルが正常にアップロードされました。");
             }
             catch (OperationCanceledException)
             {
                 // クライアント側でキャンセルが発生した場合の処理
+                await transaction.RollbackAsync();
                 return StatusCode(StatusCodes.Status499ClientClosedRequest, "アップロードがキャンセルされました。");
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 // 他のエラー処理
-                return StatusCode(StatusCodes.Status500InternalServerError, "ファイルアップロード中にエラーが発生しました。");
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
             }
 
         }

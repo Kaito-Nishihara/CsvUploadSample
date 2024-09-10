@@ -51,8 +51,15 @@
 
 
 @section Scripts {
+       
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.11/signalr.min.js"></script>
     <script>
+        $(document).ready(function () {
+            // すべてのモーダルに対して、背景クリックとESCキーで閉じる機能を無効化
+            $.fn.modal.Constructor.Default.backdrop = 'static';
+            $.fn.modal.Constructor.Default.keyboard = false;
+        });
         let xhr;
 
         const connection = new signalR.HubConnectionBuilder()
@@ -98,9 +105,10 @@
                             } else if (xhr.status === 200) {
                                 $('#progressModal').modal('hide');
                                 $('#completeModal').modal('show');
-                            } else {
+                            } else {                                
                                 $('#progressModal').modal('hide');
-                                alert("アップロードに失敗しました。");
+                                var errorMessage = xhr.response
+                                alert("アップロードに失敗しました。\n" + errorMessage);
                             }
                         }
                     };

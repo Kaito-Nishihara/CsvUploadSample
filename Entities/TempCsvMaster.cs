@@ -14,10 +14,12 @@ namespace CsvUploadSample.Entities
         public DateTime CreateAt { get; set; }
         [Ignore]
         public string UploadId { get ; set ; }
+        [Ignore]
+        public int RowNumber { get; set; }
     }
     public interface IHasUploadId
-    {
-        
+    {        
         public string UploadId { get; set; }
+        public int RowNumber { get; set; }
     }
 }
