@@ -1,0 +1,4 @@
+Name,Description,Type,InternetId,CreateAt
+Product A,Description A,Type1,1001,2024-09-02 10:00:00
+Product B,Description B,Type2,1002,2024-09-02 10:00:00
+Product B,Description B,Type2,1002,2024-33-02 10:00:00
