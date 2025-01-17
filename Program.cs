@@ -10,6 +10,8 @@ builder.Services.AddSignalR();
 builder.Services.AddDbContext<CsvAppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddTransient<ICsvUploadService<TempCsvMaster,CsvMaster>, CsvUploadService<TempCsvMaster,CsvMaster>>();
+builder.Services.AddTransient<ICsvUploadService<TempCsvMaster, SubMaster>, CsvUploadService<TempCsvMaster, SubMaster>>();
+builder.Services.AddTransient<ISampleService, SampleService> ();
 
 
 var app = builder.Build();

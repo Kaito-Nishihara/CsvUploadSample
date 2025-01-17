@@ -9,6 +9,7 @@ namespace CsvUploadSample.Entities
         }
 
         public DbSet<CsvMaster> CsvMasters { get; set; }
+        public DbSet<SubMaster> SubMasters { get; set; }
         public DbSet<TempCsvMaster> TempCsvMasters { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

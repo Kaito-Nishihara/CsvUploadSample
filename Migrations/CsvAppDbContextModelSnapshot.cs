@@ -50,6 +50,34 @@ namespace CsvUploadSample.Migrations
                     b.ToTable("CsvMasters");
                 });
 
+            modelBuilder.Entity("CsvUploadSample.Entities.SubMaster", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("SubCreateAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SubDescription")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SubInternetId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SubName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SubType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SubMasters");
+                });
+
             modelBuilder.Entity("CsvUploadSample.Entities.TempCsvMaster", b =>
                 {
                     b.Property<int>("Id")
@@ -68,6 +96,24 @@ namespace CsvUploadSample.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RowNumber")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SubCreateAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SubDescription")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SubInternetId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SubName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SubType")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Type")

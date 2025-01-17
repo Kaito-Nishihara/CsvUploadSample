@@ -24,14 +24,16 @@ namespace CsvUploadSample.Controllers
         private readonly ILogger<HomeController> _logger;
         private readonly CsvAppDbContext _context;
         private readonly ICsvUploadService<TempCsvMaster,CsvMaster> _csvUploadService;
+        private readonly ISampleService _sampleService;
         private readonly IHubContext<ProgressHub> _hubContext;
 
-        public HomeController(ILogger<HomeController> logger, CsvAppDbContext dbContext, ICsvUploadService<TempCsvMaster,CsvMaster> csvUploadService, IHubContext<ProgressHub> hubContext)
+        public HomeController(ILogger<HomeController> logger, CsvAppDbContext dbContext, ICsvUploadService<TempCsvMaster,CsvMaster> csvUploadService, IHubContext<ProgressHub> hubContext, ISampleService sampleService)
         {
             _logger = logger;
             _context = dbContext;
             _csvUploadService = csvUploadService;
             _hubContext = hubContext;
+            _sampleService = sampleService;
         }
 
         public IActionResult Index()
@@ -56,7 +58,7 @@ namespace CsvUploadSample.Controllers
         [HttpPost]
         public async Task<IActionResult> FileUpload(IFormFile file, [FromForm] string uploadId)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync(); // トランザクションの開始
+            /*using var transaction = await _context.Database.BeginTransactionAsync(); // トランザクションの開始
             try
             {               
                 if (file == null || file.Length == 0)
@@ -84,9 +86,17 @@ namespace CsvUploadSample.Controllers
             {
                 await transaction.RollbackAsync();
                 // 他のエラー処理
-                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+               
+            }*/
+            try
+            {
+                var result = await _sampleService.UploadCsv(file);
             }
-
+            catch (Exception ex) 
+            {
+                throw new Exception(ex.Message);
+            }
+            return StatusCode(StatusCodes.Status500InternalServerError, "");
         }
 
         [HttpPost]
@@ -94,7 +104,7 @@ namespace CsvUploadSample.Controllers
         {
             try
             {
-                _csvUploadService.CancelUpload(request.UploadId);
+
                 return await Task.FromResult(Ok("キャンセルが成功しました。"));
             }
             catch (ArgumentException ex)
